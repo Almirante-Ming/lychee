@@ -19,8 +19,8 @@ def main(csv_path):
     
     os.makedirs('./files', exist_ok=True)
     
-    corrected_path = f"./files/{name_without_ext}_corrected.csv"
-    invalids_path = f"./files/{name_without_ext}_invalids.csv"
+    corrected_path = f"./files/{name_without_ext}_checked.csv"
+    invalids_path = f"./files/{name_without_ext}_invalid.csv"
 
     invalid_rows = []
     corrected_rows = []
