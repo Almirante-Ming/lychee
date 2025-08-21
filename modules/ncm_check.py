@@ -29,16 +29,25 @@ def main(csv_path):
     with open(csv_path, 'r', encoding='utf-8') as infile:
         first_line = infile.readline()
         uses_quotes = first_line.startswith('"')
+        
+        if ';' in first_line:
+            delimiter = ';'
+        elif ',' in first_line:
+            delimiter = ','
+        else:
+            delimiter = ','
+        
+        print(f"Detected delimiter: '{delimiter}'")
         infile.seek(0)
         
-        reader = csv.DictReader(infile)
+        reader = csv.DictReader(infile, delimiter=delimiter)
         fieldnames = reader.fieldnames
         if fieldnames is None:
             print("Error: CSV file does not contain a header row.")
             sys.exit(1)
         
         ncm_column = None
-        possible_ncm_names = ['NCM', 'ncm', '"NCM"', '"ncm"']
+        possible_ncm_names = ['NCM', 'ncm', '"NCM"', '"ncm"'] 
         
         for field in fieldnames:
             clean_field = field.strip('"').strip()
@@ -50,41 +59,36 @@ def main(csv_path):
             print("Error: CSV file does not contain an NCM column.")
             print(f"Available columns: {fieldnames}")
             sys.exit(1)
-        
-        print(f"Using NCM column: {ncm_column}")
 
         for row in reader:
             ncm_value = row.get(ncm_column, '').strip()
             
             if ncm_value not in valid_ncm:
                 invalid_rows.append(row.copy())
-                corrected_row = row.copy()
-                corrected_row[ncm_column] = '00000000'
-                corrected_rows.append(corrected_row)
                 has_modifications = True
             else:
                 corrected_rows.append(row)
 
     if not has_modifications:
-        print("No issues found - all NCM codes are valid")
+        print("No issues found - all rows are valid")
         return
 
     quoting_style = csv.QUOTE_ALL if uses_quotes else csv.QUOTE_MINIMAL
 
     with open(corrected_path, 'w', newline='', encoding='utf-8') as outfile:
-        writer = csv.DictWriter(outfile, fieldnames=fieldnames, quoting=quoting_style)
+        writer = csv.DictWriter(outfile, fieldnames=fieldnames, quoting=quoting_style, delimiter=delimiter)
         writer.writeheader()
         writer.writerows(corrected_rows)
 
     with open(invalids_path, 'w', newline='', encoding='utf-8') as outfile:
-        writer = csv.DictWriter(outfile, fieldnames=fieldnames, quoting=quoting_style)
+        writer = csv.DictWriter(outfile, fieldnames=fieldnames, quoting=quoting_style, delimiter=delimiter)
         writer.writeheader()
         writer.writerows(invalid_rows)
 
     print(f"Processing complete:")
-    print(f"- Corrected file (invalid NCMs → 00000000): {corrected_path}")
-    print(f"- Invalid rows (values for review): {invalids_path}")
+    print(f"- Invalid rows (for review): {invalids_path}")
     print(f"- Found {len(invalid_rows)} invalid NCM codes")
+    print(f"- Valid rows: {len(corrected_rows)}")
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
