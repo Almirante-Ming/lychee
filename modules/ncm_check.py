@@ -2,34 +2,92 @@ import sys
 import json
 import csv
 import os
+import shutil
 
-def main(valid_ncm_path, csv_path):
+def main(csv_path):
+    valid_ncm_path = './files/valid_ncm.json'
+    
+    if not os.path.exists(valid_ncm_path):
+        print(f"Error: {valid_ncm_path} not found. Please run ncm_valid_generator.py first.")
+        sys.exit(1)
+    
     with open(valid_ncm_path, 'r', encoding='utf-8') as f:
         valid_ncm = set(json.load(f))
 
-    base, ext = os.path.splitext(csv_path)
-    invalids_path = f"{base}_invalids.csv"
+    base_name = os.path.basename(csv_path)
+    name_without_ext = os.path.splitext(base_name)[0]
+    
+    os.makedirs('./files', exist_ok=True)
+    
+    corrected_path = f"./files/{name_without_ext}_corrected.csv"
+    invalids_path = f"./files/{name_without_ext}_invalids.csv"
 
-    with open(csv_path, 'r', encoding='utf-8') as infile, \
-         open(invalids_path, 'w', newline='', encoding='utf-8') as outfile:
+    invalid_rows = []
+    corrected_rows = []
+    has_modifications = False
+
+    with open(csv_path, 'r', encoding='utf-8') as infile:
+        first_line = infile.readline()
+        uses_quotes = first_line.startswith('"')
+        infile.seek(0)
+        
         reader = csv.DictReader(infile)
         fieldnames = reader.fieldnames
         if fieldnames is None:
             print("Error: CSV file does not contain a header row.")
             sys.exit(1)
-        writer = csv.DictWriter(outfile, fieldnames=fieldnames)
-        writer.writeheader()
+        
+        ncm_column = None
+        possible_ncm_names = ['NCM', 'ncm', '"NCM"', '"ncm"']
+        
+        for field in fieldnames:
+            clean_field = field.strip('"').strip()
+            if clean_field.lower() == 'ncm':
+                ncm_column = field
+                break
+        
+        if ncm_column is None:
+            print("Error: CSV file does not contain an NCM column.")
+            print(f"Available columns: {fieldnames}")
+            sys.exit(1)
+        
+        print(f"Using NCM column: {ncm_column}")
 
         for row in reader:
-            ncm_value = row.get('ncm', '')
+            ncm_value = row.get(ncm_column, '').strip()
+            
             if ncm_value not in valid_ncm:
-                row['ncm'] = '00000000'
-                writer.writerow(row)
+                invalid_rows.append(row.copy())
+                corrected_row = row.copy()
+                corrected_row[ncm_column] = '00000000'
+                corrected_rows.append(corrected_row)
+                has_modifications = True
+            else:
+                corrected_rows.append(row)
 
-    print(f"Invalid NCM rows written to: {invalids_path}")
+    if not has_modifications:
+        print("No issues found - all NCM codes are valid")
+        return
+
+    quoting_style = csv.QUOTE_ALL if uses_quotes else csv.QUOTE_MINIMAL
+
+    with open(corrected_path, 'w', newline='', encoding='utf-8') as outfile:
+        writer = csv.DictWriter(outfile, fieldnames=fieldnames, quoting=quoting_style)
+        writer.writeheader()
+        writer.writerows(corrected_rows)
+
+    with open(invalids_path, 'w', newline='', encoding='utf-8') as outfile:
+        writer = csv.DictWriter(outfile, fieldnames=fieldnames, quoting=quoting_style)
+        writer.writeheader()
+        writer.writerows(invalid_rows)
+
+    print(f"Processing complete:")
+    print(f"- Corrected file (invalid NCMs → 00000000): {corrected_path}")
+    print(f"- Invalid rows (values for review): {invalids_path}")
+    print(f"- Found {len(invalid_rows)} invalid NCM codes")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python ncm_validator.py valid_ncm.json <file.csv>")
+    if len(sys.argv) != 2:
+        print("Usage: python ncm_check.py <file.csv>")
         sys.exit(1)
-    main(sys.argv[1], sys.argv[2])
+    main(sys.argv[1])
