@@ -92,32 +92,25 @@ def run_module(module_name, script_name, file_path):
     print("-" * 40)
     
     try:
-        script_path = os.path.join("modules", script_name)
-        
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        script_path = os.path.join(base_dir, "modules", script_name)
         if not os.path.exists(script_path):
             print(f"❌ Module {script_name} not found!")
             return
-        
-        # Try to use a relative path for the file argument
-        base_dir = os.path.dirname(os.path.abspath(__file__))
         try:
             rel_file_path = os.path.relpath(file_path, base_dir)
         except Exception:
             rel_file_path = file_path
-        
-        # Run the module with relative file path
         result = subprocess.run(
             ["python", script_path, rel_file_path],
             cwd=base_dir,
             text=True,
             timeout=300  # 5 minute timeout
         )
-        
         if result.returncode == 0:
             print(f"✅ {module_name} completed successfully!")
         else:
             print(f"❌ {module_name} failed with error code {result.returncode}")
-            
     except subprocess.TimeoutExpired:
         print(f"❌ {module_name} timed out after 5 minutes")
     except KeyboardInterrupt:
