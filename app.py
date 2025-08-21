@@ -18,12 +18,12 @@ def print_banner():
 def get_modules():
     """Get available modules"""
     return {
-        "1": ("NCM Check", "ncm_check.py", "csv"),
-        "2": ("Date Fix", "date_fix.py", "csv"), 
-        "3": ("Table Fix", "table_fix.py", "csv"),
-        "4": ("Table Out", "table_out.py", "csv"),
-        "5": ("Regex Replace", "regex_replace.py", "csv"),
-        "6": ("NCM Valid Generator", "ncm_valid_generator.py", "json")
+        "1": ("Table in", "table_fix.py", "csv"),
+        "2": ("Regex Replace", "regex_replace.py", "csv"),
+        "3": ("NCM Check", "ncm_check.py", "csv"),
+        "4": ("NCM Valid Generator", "ncm_valid_generator.py", "json"),
+        "5": ("Date Fix", "date_fix.py", "csv"),
+        "6": ("Table Out", "table_out.py", "csv")
     }
 
 def show_menu():
@@ -38,16 +38,22 @@ def show_menu():
     print("-" * 30)
 
 def get_file_input(file_type):
-    """Get file input from user"""
+    """Get file input from user with drag and drop support"""
     while True:
-        file_path = input(f"\n📂 Enter path to {file_type.upper()} file: ").strip()
+        print(f"\n📂 Enter path to {file_type.upper()} file:")
+        print("💡 TIP: You can drag and drop the file into this terminal")
+        file_path = input("📁 File path: ").strip()
         
         if not file_path:
             print("❌ Please enter a file path")
             continue
+        
+        # Clean up drag-and-drop file paths
+        file_path = clean_file_path(file_path)
             
         if not os.path.exists(file_path):
             print("❌ File does not exist")
+            print(f"🔍 Tried: {file_path}")
             continue
             
         if not file_path.lower().endswith(f'.{file_type}'):
@@ -55,6 +61,30 @@ def get_file_input(file_type):
             continue
             
         return file_path
+
+def clean_file_path(file_path):
+    """Clean file path from drag and drop operations"""
+    # Remove surrounding quotes (single or double)
+    file_path = file_path.strip('\'"')
+    
+    # Handle escaped spaces and special characters (common in drag-drop)
+    file_path = file_path.replace('\\ ', ' ')
+    
+    # Remove file:// prefix if present (some systems add this)
+    if file_path.startswith('file://'):
+        file_path = file_path[7:]
+    
+    # Handle Windows paths with forward slashes
+    if os.name == 'nt' and '/' in file_path:
+        file_path = file_path.replace('/', '\\')
+    
+    # Expand user path (~)
+    file_path = os.path.expanduser(file_path)
+    
+    # Convert to absolute path
+    file_path = os.path.abspath(file_path)
+    
+    return file_path
 
 def run_module(module_name, script_name, file_path):
     """Run a module with the given file"""
@@ -97,10 +127,16 @@ def open_files_folder():
             os.makedirs(files_path)
             print(f"📁 Created files folder: {files_path}")
         
-        if os.name == 'nt':  # Windows
+        if os.name == 'nt':
             os.startfile(files_path)
-        elif os.name == 'posix':  # macOS and Linux
-            subprocess.run(['xdg-open', files_path])
+        elif os.name == 'posix':
+            if sys.platform == 'darwin':
+                subprocess.run(['open', files_path])
+            else:
+                subprocess.run(['xdg-open', files_path])
+        else:
+            print(f"📍 Files are saved in: {files_path}")
+            return
         
         print(f"📁 Opened files folder: {files_path}")
     except Exception as e:
@@ -108,14 +144,11 @@ def open_files_folder():
         print(f"📍 Files are saved in: {files_path}")
 
 def try_gui():
-    """Try to run the GUI version"""
     try:
-        # Check if we have a display
-        if os.name == 'posix':  # Linux/Unix
+        if os.name == 'posix':
             if not os.environ.get('DISPLAY') and not os.environ.get('WAYLAND_DISPLAY'):
                 return False
-        
-        # Try to import and run GUI
+
         import subprocess
         result = subprocess.run(
             ["python", "app_gui.py"],
@@ -128,10 +161,8 @@ def try_gui():
         return False
 
 def main():
-    """Main application function"""
     print_banner()
     
-    # Try GUI first
     print("🔍 Checking for GUI support...")
     if try_gui():
         return
