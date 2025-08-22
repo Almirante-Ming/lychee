@@ -3,6 +3,78 @@ import json
 import csv
 import os
 import shutil
+from collections import defaultdict
+
+def sort_by_group_and_subgroup(rows, fieldnames):
+    grupo_column = None
+    subgrupo_column = None
+    
+    for field in fieldnames:
+        clean_field = field.strip('"').strip().lower()
+        if clean_field in ['grupo', 'group']:
+            grupo_column = field
+        elif clean_field in ['sub_grupo', 'subgrupo', 'SUBGRUPO', 'SUB_GRUPO']:
+            subgrupo_column = field
+    
+    if grupo_column is None:
+        print("Warning: GRUPO column not found. Sorting by first column.")
+        return rows
+    
+    def sort_key(row):
+        grupo = row.get(grupo_column, '').strip().strip('"')
+        subgrupo = row.get(subgrupo_column, '').strip().strip('"') if subgrupo_column else ''
+        
+        try:
+            grupo_int = int(grupo) if grupo else 999
+        except ValueError:
+            grupo_int = 999
+            
+        return (grupo_int, subgrupo)
+    
+    return sorted(rows, key=sort_key)
+
+def print_subgroup_aggregation(rows, fieldnames):
+    grupo_column = None
+    subgrupo_column = None
+    
+    for field in fieldnames:
+        clean_field = field.strip('"').strip().lower()
+        if clean_field in ['grupo', 'group']:
+            grupo_column = field
+        elif clean_field in ['sub_grupo', 'subgrupo', 'sub_group', 'subgroup']:
+            subgrupo_column = field
+    
+    if not rows:
+        return
+    
+    aggregation = defaultdict(lambda: defaultdict(int))
+    grupo_names = {}
+    
+    for row in rows:
+        grupo = row.get(grupo_column, '').strip().strip('"') if grupo_column else 'Unknown'
+        subgrupo = row.get(subgrupo_column, '').strip().strip('"') if subgrupo_column else 'Unknown'
+        
+        if grupo not in grupo_names and grupo != 'Unknown':
+            grupo_names[grupo] = grupo
+            
+        aggregation[grupo][subgrupo] += 1
+    
+    print("\n" + "="*60)
+    print("AGGREGATION SUMMARY BY GROUP AND SUBGROUP")
+    print("="*60)
+    
+    sorted_grupos = sorted(aggregation.keys(), key=lambda x: int(x) if x.isdigit() else 999)
+    
+    for grupo in sorted_grupos:
+        subgroups = aggregation[grupo]
+        total_grupo = sum(subgroups.values())
+        
+        print(f"\nGroup {grupo}: {total_grupo} items")
+        print("-" * 40)
+        
+        for subgrupo in sorted(subgroups.keys()):
+            count = subgroups[subgrupo]
+            print(f"  └─ {subgrupo}: {count} items")
 
 def main(csv_path):
     valid_ncm_path = './files/valid_ncm.json'
@@ -80,15 +152,19 @@ def main(csv_path):
         writer.writeheader()
         writer.writerows(corrected_rows)
 
+    sorted_invalid_rows = sort_by_group_and_subgroup(invalid_rows, fieldnames)
+    
     with open(invalids_path, 'w', newline='', encoding='utf-8') as outfile:
         writer = csv.DictWriter(outfile, fieldnames=fieldnames, quoting=quoting_style, delimiter=delimiter)
         writer.writeheader()
-        writer.writerows(invalid_rows)
+        writer.writerows(sorted_invalid_rows)
 
     print(f"Processing complete:")
     print(f"- Invalid rows (for review): {invalids_path}")
     print(f"- Found {len(invalid_rows)} invalid NCM codes")
     print(f"- Valid rows: {len(corrected_rows)}")
+    
+    print_subgroup_aggregation(sorted_invalid_rows, fieldnames)
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
