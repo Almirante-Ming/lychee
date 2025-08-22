@@ -1,7 +1,18 @@
 # 🍃 CSV Processor - Lychee
 
-A comprehensive CSV processing toolkit with both GUI and CLI interfaces for table formatting and database migration.
+A CSV processing toolkit with CLI interface.
 
+## Requirements
+
+- Python 3.13+
+- command shell (powershell, bash, zsh)
+
+## Installation
+
+1. Clone or download this repository
+2. Run: `python app.py` **on project root**
+
+Compatible with Windows and Linux systems.
 
 ## Features
 
@@ -21,10 +32,7 @@ A comprehensive CSV processing toolkit with both GUI and CLI interfaces for tabl
 ```bash
 python app.py
 ```
-The app will automatically detect if GUI is available and launch the graphical interface.
-
-### CLI Mode
-If GUI is not available, the app automatically falls back to CLI mode with an interactive menu:
+The app will launch in  the command line interface.
 
 ```bash
 python app.py
@@ -42,34 +50,17 @@ Each module can also be run independently:
 ### NCM Validation
 ```bash
 # First generate valid NCM codes
-python modules/ncm_valid_generator.py data/ncm_codes.json
+python modules/ncm_valid_generator.py tabela_vigente_*.json
 
-# Then validate your CSV
-python modules/ncm_check.py your_file.csv
-```
-
-### Date Processing
-```bash
-python modules/date_fix.py your_file.csv
-```
-
-### Table Formatting
-```bash
-python modules/table_fix.py your_file.csv
-python modules/table_out.py your_file.csv
-```
-
-### Character Normalization
-```bash
-python modules/regex_replace.py your_file.csv
+# Others modules
+python modules/module_name.py your_file.csv
 ```
 
 ## File Structure
 
 ```
 lychee/
-├── app.py                    # Main application (auto GUI/CLI)
-├── app_gui.py               # GUI-only version (Dear PyGui)
+├── app.py                    # Main application
 ├── modules/                 # Processing modules
 │   ├── ncm_check.py
 │   ├── ncm_valid_generator.py
@@ -88,17 +79,3 @@ All processed files are saved to the `./files/` directory with descriptive suffi
 - `*_invalid.csv` - Invalid records  
 - `*_fixed.csv` - Processed/fixed data
 - `*_errors.txt` - Error reports
-
-## Requirements
-
-- Python 3.7+
-- Standard library modules (csv, json, os, sys, etc.)
-- Optional: dearpygui (for GUI mode)
-
-## Installation
-
-1. Clone or download this repository
-2. For GUI support: `pip install dearpygui`
-3. Run: `python app.py`
-
-Compatible with Windows and Linux systems. The application works without any external dependencies in CLI mode!
