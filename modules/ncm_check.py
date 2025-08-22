@@ -25,11 +25,16 @@ def sort_by_group_and_subgroup(rows, fieldnames):
         subgrupo = row.get(subgrupo_column, '').strip().strip('"') if subgrupo_column else ''
         
         try:
-            grupo_int = int(grupo) if grupo else 999
+            grupo_int = int(grupo) if grupo else 999999
         except ValueError:
-            grupo_int = 999
+            grupo_int = 999999
+        
+        try:
+            subgrupo_int = int(subgrupo) if subgrupo else 999999
+        except ValueError:
+            subgrupo_int = 999999
             
-        return (grupo_int, subgrupo)
+        return (grupo_int, subgrupo_int, subgrupo)
     
     return sorted(rows, key=sort_key)
 
@@ -48,22 +53,27 @@ def print_subgroup_aggregation(rows, fieldnames):
         return
     
     aggregation = defaultdict(lambda: defaultdict(int))
-    grupo_names = {}
     
     for row in rows:
-        grupo = row.get(grupo_column, '').strip().strip('"') if grupo_column else 'Unknown'
-        subgrupo = row.get(subgrupo_column, '').strip().strip('"') if subgrupo_column else 'Unknown'
+        grupo = row.get(grupo_column, '').strip().strip('"') if grupo_column else ''
+        subgrupo = row.get(subgrupo_column, '').strip().strip('"') if subgrupo_column else ''
         
-        if grupo not in grupo_names and grupo != 'Unknown':
-            grupo_names[grupo] = grupo
+        grupo_display = grupo if grupo else 'None'
+        subgrupo_display = subgrupo if subgrupo else 'None'
             
-        aggregation[grupo][subgrupo] += 1
+        aggregation[grupo_display][subgrupo_display] += 1
     
     print("\n" + "="*60)
     print("AGGREGATION SUMMARY BY GROUP AND SUBGROUP")
     print("="*60)
     
-    sorted_grupos = sorted(aggregation.keys(), key=lambda x: int(x) if x.isdigit() else 999)
+    def sort_key(grupo):
+        try:
+            return (0, int(grupo))
+        except ValueError:
+            return (1, grupo)
+    
+    sorted_grupos = sorted(aggregation.keys(), key=sort_key)
     
     for grupo in sorted_grupos:
         subgroups = aggregation[grupo]
@@ -72,7 +82,14 @@ def print_subgroup_aggregation(rows, fieldnames):
         print(f"\nGroup {grupo}: {total_grupo} items")
         print("-" * 40)
         
-        for subgrupo in sorted(subgroups.keys()):
+        def sort_subgroup_key(subgrupo):
+            try:
+                return (0, int(subgrupo))
+            except ValueError:
+                return (1, subgrupo)
+        
+        sorted_subgroups = sorted(subgroups.keys(), key=sort_subgroup_key)
+        for subgrupo in sorted_subgroups:
             count = subgroups[subgrupo]
             print(f"  └─ {subgrupo}: {count} items")
 

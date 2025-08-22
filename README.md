@@ -2,15 +2,18 @@
 
 A comprehensive CSV processing toolkit with both GUI and CLI interfaces for table formatting and database migration.
 
+
 ## Features
 
 ### Available Modules:
-1. **NCM Check** - Validates NCM codes against official database
-2. **Date Fix** - Converts various date formats to yyyy-mm-dd standard  
-3. **Table Fix** - Converts CSV to semicolon-separated format with quotes
-4. **Table Out** - Removes quotes and validates CSV format
-5. **Regex Replace** - Normalizes Unicode characters to ASCII
-6. **NCM Valid Generator** - Generates valid NCM codes from JSON data
+1. **Table Fix** - Converts CSV to semicolon-separated format with quotes
+2. **Regex Replace** - Normalizes Unicode characters to ASCII
+3. **NCM Check** - Validates NCM codes against official database
+4. **NCM Valid Generator** - Generates valid NCM codes from JSON data
+5. **Date Fix** - Converts various date formats to yyyy-mm-dd standard  
+6. **Table Out** - Removes quotes and validates CSV format
+
+**p.s: use modules in same order when is showing**
 
 ## Quick Start
 
