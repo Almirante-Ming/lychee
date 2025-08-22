@@ -28,11 +28,7 @@ Compatible with Windows and Linux systems.
 
 ## Quick Start
 
-### GUI Mode (if available)
-```bash
-python app.py
-```
-The app will launch in  the command line interface.
+The app will launch in the command line interface.
 
 ```bash
 python app.py
